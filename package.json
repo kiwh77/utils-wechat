@@ -1,0 +1,29 @@
+{
+  "name": "uitls-wechat",
+  "version": "0.1.0",
+  "description": "wechat util for express in node",
+  "main": "/dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiwh77/utils-wechat.git"
+  },
+  "keywords": [
+    "wechat",
+    "util",
+    "wx"
+  ],
+  "author": "kiwh77",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kiwh77/utils-wechat/issues"
+  },
+  "homepage": "https://github.com/kiwh77/utils-wechat#readme",
+  "dependencies": {
+    "axios": "^0.17.1",
+    "node-schedule": "^1.3.0",
+    "sha1": "^1.1.1"
+  }
+}
