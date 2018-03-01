@@ -42,6 +42,8 @@ module.exports.getUserWXBaseInfo = (params) => {
     return Promise.reject('accesstoken and openid required!')
   }
 }
+
+
 // {
 //   "subscribe": 1,
 //   "openid": "o6_bmjrPTlm6_2sgVt7hMZOPfL2M",
@@ -59,7 +61,7 @@ module.exports.getUserWXBaseInfo = (params) => {
 
 //  "tagid_list":[128,2]
 // }
-
+// 使用用户access_token
 module.exports.getUserWxInfo = (params) => {
   if (params.accesstoken && params.openid) {
     return axios.get(`https://api.weixin.qq.com/sns/userinfo?access_token=${params.accesstoken}&openid=${params.openid}&lang=zh_CN`)
