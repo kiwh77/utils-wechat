@@ -14,7 +14,7 @@ const createMenu = (wechatapi) => {
   return async (req, res, next) => {
     const menuData = req.body.menuData
     try {
-      assert(menuData, '菜单信息不能为空')      
+      assert(menuData, '菜单信息不能为空')
       const result = await wechatapi.createMenuAsync(menuData)
       return res.status(200).send({message: result.errmsg})
     } catch (e) {
