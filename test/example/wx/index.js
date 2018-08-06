@@ -1,11 +1,13 @@
 
 
 // const WxUtil = require('utils-wechat')
-const WxUtil = require("../../src")
+const WxUtil = require('../../../src')
 
 const wxutil = new WxUtil({
-  WXAPPID: 'APPID',
-  WXAPPSECRET: 'APPSECRET'
+  config: {
+    WXAPPID: 'APPID',
+    WXAPPSECRET: 'APPSECRET'
+  }
 })
 
 // 载入的模块
