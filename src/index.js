@@ -33,11 +33,12 @@ function WxUtil ({ config }) {
   this.load = (components) => {
     if (Array.isArray(components)) {
       components.forEach(component => {
-        this[component] = require(`./${component}`)({
+        const cominstance = require(`./${component}`)
+        cominstance ? (this[component] = cominstance({
           wechatapi: this.wechatApi,
           service: this.service,
           cache: this.cache
-        })
+        })) : console.info(`component ${component} can't find!`)
       })
     }
   }

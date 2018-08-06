@@ -1,4 +1,7 @@
 const axios = require('axios')
+const md5 = require('crypto-js/md5')
+const moment = require('moment')
+const xml2json = require('xml2json')
 
 module.exports.getJsApiTicket = (params) => {
   if (params.accesstoken) {
@@ -79,3 +82,78 @@ module.exports.authAccesstoken = (params) => {
   }
 }
 
+
+const getSign = (args, key) => {
+  const keys = Object.keys(args)
+  if (!keys || !keys.length || !key) return
+  const paramStr = keys
+    .filter(key => key && args[key])
+    .sort()
+    .map(key => `${key}=${(args[key] + '').replace(/\s+/g, '')}`)
+    .join('&') + `&key=${key}`
+
+  const sign = md5(paramStr).toString().toUpperCase()
+  return sign
+}
+
+/**
+ * 微信支付预支付下单
+ * 暂仅支付所必须参数
+ * @param {String} appid 公众号appid
+ * @param {String} attach 支付描述
+ * @param {String} body 支付内容
+ * @param {String} mch_id 商户id
+ * @param {String} nonce_str 随机字符串，默认：当前时间戳
+ * @param {String} notify_url 回调地址
+ * @param {String} openid 用户openid
+ * @param {String} out_trade_no 订单号
+ * @param {String} spbill_create_ip 创建ip
+ * @param {String} total_fee 金额
+ * @param {String} trade_type 发起支付方式，默认：JSAPI
+ * 
+ * @returns {Object} 返回对象可直接由微信jssdk发起支付，注意jssdk相当接口的注册
+ */
+module.exports.prepay = async (params) => {
+  params.nonce_str = params.nonce_str || `${moment().unix()}`
+  params.trade_type = params.trade_type || 'JSAPI'
+  const authArgs = ['appid', 'attach', 'body', 'mch_id', 'nonce_str', 'notify_url', 'openid', 'out_trade_no', 'spbill_create_ip', 'total_fee', 'trade_type']
+  for (let i=0;i<authArgs.length;i++) {
+    const arg = authArgs[i]
+    if (!params[arg]) return Promise.reject(`${arg}不能为空`)
+  }
+
+  let formData = '<xml>'
+  formData += '<appid>' + params.appid + '</appid>' // appid
+  formData += '<attach>' + params.attach + '</attach>'
+  formData += '<body>' + params.body + '</body>'
+  formData += '<mch_id>' + params.mch_id + '</mch_id>' // 商户号
+  formData += '<nonce_str>' + params.nonce_str + '</nonce_str>'
+  formData += '<notify_url>' + params.notify_url + '</notify_url>'
+  formData += '<openid>' + params.openid + '</openid>'
+  formData += '<out_trade_no>' + params.out_trade_no + '</out_trade_no>'
+  formData += '<spbill_create_ip>' + params.spbill_create_ip + '</spbill_create_ip>'
+  formData += '<total_fee>' + params.total_fee + '</total_fee>'
+  formData += '<trade_type>' + params.trade_type + '</trade_type>'
+  formData += '<sign>' + getSign({appid: params.appid, attach: params.attach, body: params.body, mch_id: params.mch_id, nonce_str: params.nonce_str, notify_url: params.notify_url, openid: params.openid, out_trade_no: params.out_trade_no, spbill_create_ip: params.spbill_create_ip, total_fee: params.total_fee, trade_type: params.trade_type}, params.key) + '</sign>'
+  formData += '</xml>'
+  const result = await axios.post('https://api.mch.weixin.qq.com/pay/unifiedorder', formData)
+
+  if (result && result.status === 200) {
+    const data = JSON.parse(xml2json.toJson(result.data))
+    if (data.xml && data.xml.return_code === 'SUCCESS') {
+      const r = {
+        appId: params.appid,
+        timeStamp: `${moment().unix()}`,
+        nonceStr: params.nonce_str,
+        package: `prepay_id=${data.xml.prepay_id}`,
+        signType: 'MD5'
+      }
+      r.paySign = getSign(r, params.key)
+      return Promise.resolve(r)
+    } else {
+      return Promise.reject(data.xml.return_msg)
+    }
+  } else {
+    return Promise.reject(result.statusText)
+  }
+}
