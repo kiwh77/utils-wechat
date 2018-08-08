@@ -14,7 +14,7 @@ const params = {
   'appid': 'APPID', 
   'attach': '支付测试',
   'body': '支付测试内容',
-  'mch_id': 'APPID',
+  'mch_id': 'MCH_ID',
   'nonce_str': '' + new Date().valueOf(),
   'notify_url': 'NOTIFY_URL', 
   'openid': 'o-HgKxCqizyRQVkJ-U-6we0YOwdw', 

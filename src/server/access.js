@@ -1,4 +1,5 @@
 
+// 自定义服务器事件
 const incept = ({ wechatapi, cache }) => {
   return async (req, res, next) => {
     const query = req.query, body = req.body;
@@ -56,13 +57,17 @@ const authAccess = ({wechatapi, service, cache}) => {
       const authAccessToken = checkUserAccessToken(req.session.userAccessToken)
       // 未过期
       if (authAccessToken) return next()
-
-      const userAccessTokenResponse = await service.getUserAccessToken({
-        appid: cache.config.WXAPPID,
-        appsecret: cache.config.WXAPPSECRET,
-        code: req.query.code
-      })
-      const userAccessToken = userAccessTokenResponse.data
+      let userAccessToken
+      try {
+        const userAccessTokenResponse = await service.getUserAccessToken({
+          appid: cache.config.WXAPPID,
+          appsecret: cache.config.WXAPPSECRET,
+          code: req.query.code
+        })
+        userAccessToken = userAccessTokenResponse.data
+      } catch (e) {
+        console.log(e)
+      }
       if (userAccessToken.openid && userAccessToken.access_token) {
         req.session.userAccessToken = userAccessToken
         req.session.userAccessToken.expires_in = Date.now() + (parseInt(userAccessToken.expires_in, 10) - 200) * 1000
@@ -82,15 +87,44 @@ const authAccess = ({wechatapi, service, cache}) => {
 /**
  * 用户微信信息
  */
-const authWxInfo = ({ wechatapi }) => {
+const authWxInfo = ({ wechatapi, service, cache }) => {
   return async (req, res, next) => {
     if (/\w*.js|\w*.css|\w*.html|\w*.png|\w*.jpg|\w*.jpeg/.test(req.url)) return next()
+
+    const redirectFunc = () => {
+      // 拼装重定向
+      let currentUrl
+      if (/\?\w*code=\w/.test(req.url)) {
+        currentUrl = cache.config.HOST + req.originalUrl.split('?')[0]
+      } else {
+        currentUrl = encodeURI(cache.config.HOST + req.originalUrl)
+      }
+      const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
+      res.redirect(redirectUrl)
+    }
 
     if (req.query.code && req.query.state && req.isUnauthenticated()) {
       // 获取openid
       if (req.session.userAccessToken && req.session.userAccessToken.access_token) {
-        const userinfo = await wechatapi.getUserAsync(req.session.userAccessToken.openid)
-        if (userinfo.errcode) {
+        let userinfo
+        try {
+          userinfo = await wechatapi.getUserAsync(req.session.userAccessToken.openid)
+        } catch (e) {
+          if (e && e.code === 40001) { // access_token 失效
+            return wechatapi.getLatestToken((err, token) => {
+              if (err) {
+                console.log('get latest token err : ', err)
+              } else {
+                console.log('new Token : ', token)
+              }
+              redirectFunc()
+            })
+          } else {
+            console.log('query user :', e)
+          }
+        }
+        
+        if (userinfo && userinfo.errcode) {
           console.error(`查询用户信息失败,${userinfo.errcode},${JSON.stringify(req.session.userAccessToken)}`)
           return next()
         }
