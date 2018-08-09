@@ -108,7 +108,7 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
       return new Promise((resolve, reject) => {
         wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, error => {
           if (error && error.code === 40001 ) {
-            wechatapi.getLatestToken((err, token) => {
+            wechatapi.getAccessToken((err, token) => {
               console.log(err, token)
               if (err) {
                 return reject(error)
