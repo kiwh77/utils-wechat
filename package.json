@@ -1,6 +1,6 @@
 {
   "name": "utils-wechat",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "wechat util for express in node",
   "main": "./src/index.js",
   "scripts": {
