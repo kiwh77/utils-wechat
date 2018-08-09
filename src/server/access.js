@@ -94,10 +94,11 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
     const redirectFunc = () => {
       // 拼装重定向
       let currentUrl
+      const HOST = cache && cache.config ? cache.config.HOST : ''
       if (/\?\w*code=\w/.test(req.url)) {
-        currentUrl = cache.config.HOST + req.originalUrl.split('?')[0]
+        currentUrl = encodeURI(HOST + req.originalUrl.split('?')[0])
       } else {
-        currentUrl = encodeURI(cache.config.HOST + req.originalUrl)
+        currentUrl = encodeURI(HOST + req.originalUrl)
       }
       const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
       res.redirect(redirectUrl)
@@ -153,6 +154,6 @@ module.exports = ({ wechatapi, service, cache }) => {
   return {
     incept: incept({wechatapi, cache}),
     authAccess: authAccess({wechatapi, service, cache}),
-    authWxInfo: authWxInfo({wechatapi})
+    authWxInfo: authWxInfo({wechatapi, service, cache})
   }
 }
