@@ -91,38 +91,46 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
   return async (req, res, next) => {
     if (/\w*.js|\w*.css|\w*.html|\w*.png|\w*.jpg|\w*.jpeg/.test(req.url)) return next()
 
-    const redirectFunc = () => {
-      // 拼装重定向
-      let currentUrl
-      const HOST = cache && cache.config ? cache.config.HOST : ''
-      if (/\?\w*code=\w/.test(req.url)) {
-        currentUrl = encodeURI(HOST + req.originalUrl.split('?')[0])
-      } else {
-        currentUrl = encodeURI(HOST + req.originalUrl)
-      }
-      const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
-      res.redirect(redirectUrl)
+    // const redirectFunc = () => {
+    //   // 拼装重定向
+    //   let currentUrl
+    //   const HOST = cache && cache.config ? cache.config.HOST : ''
+    //   if (/\?\w*code=\w/.test(req.url)) {
+    //     currentUrl = encodeURI(HOST + req.originalUrl.split('?')[0])
+    //   } else {
+    //     currentUrl = encodeURI(HOST + req.originalUrl)
+    //   }
+    //   const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
+    //   res.redirect(redirectUrl)
+    // }
+
+    const getUserInfo = async () => {
+      return new Promise((resolve, reject) => {
+        wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, error => {
+          if (error && error.code === 40001 ) {
+            wechatapi.getLatestToken((err, token) => {
+              console.log(err, token)
+              if (err) {
+                return reject(error)
+              } else {
+                wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, reject)
+              }
+            })
+          } else {
+            reject(error)
+          }
+        }) 
+      })
     }
 
     if (req.query.code && req.query.state && req.isUnauthenticated()) {
       // 获取openid
       if (req.session.userAccessToken && req.session.userAccessToken.access_token) {
-        let userinfo
+        let userinfo 
         try {
-          userinfo = await wechatapi.getUserAsync(req.session.userAccessToken.openid)
+          userinfo = await getUserInfo()
         } catch (e) {
-          if (e && e.code === 40001) { // access_token 失效
-            return wechatapi.getLatestToken((err, token) => {
-              if (err) {
-                console.log('get latest token err : ', err)
-              } else {
-                console.log('new Token : ', token)
-              }
-              redirectFunc()
-            })
-          } else {
-            console.log('query user :', e)
-          }
+          console.log('Query userinfo error :', e)
         }
         
         if (userinfo && userinfo.errcode) {
@@ -136,11 +144,11 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
               next()
             })
           } else {
-            console.log(`Info>> 未发现login`)
+            console.log(`INFO>> 未发现login`)
             next()
           }
         } else {
-          console.log(`warning>> 查询用户信息失败`)
+          console.log(`WARNING>> 查询用户信息失败`)
           next()
         }
       }
