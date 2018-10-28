@@ -130,7 +130,7 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
         try {
           userinfo = await getUserInfo()
         } catch (e) {
-          console.log('Query userinfo error :', e)
+          console.log('查询用户用户错误 :', e, `${req.session.userAccessToken}`)
         }
         
         if (userinfo && userinfo.errcode) {

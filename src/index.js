@@ -11,14 +11,14 @@ const BB = require('bluebird').Promise
  * events: 微信官文事件处理
  * notify: 消息发送封装
  */
-function WxUtil ({ config }) {
+function WxUtil ({ config, getToken, saveToken }) {
   this.cache = {
     wxinfo: {},
     eventRegister: {},
     config
   }
   this.service = require('./service')
-  this.asyncWechatapi = new WechatApi(config.WXAPPID, config.WXAPPSECRET, config.getToken, config.saveToken)
+  this.asyncWechatapi = new WechatApi(config.WXAPPID, config.WXAPPSECRET, getToken, saveToken)
   this.wechatApi = BB.promisifyAll(this.asyncWechatapi)
   /**
    * 加载所需模块
