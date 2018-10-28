@@ -91,19 +91,6 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
   return async (req, res, next) => {
     if (/\w*.js|\w*.css|\w*.html|\w*.png|\w*.jpg|\w*.jpeg/.test(req.url)) return next()
 
-    // const redirectFunc = () => {
-    //   // 拼装重定向
-    //   let currentUrl
-    //   const HOST = cache && cache.config ? cache.config.HOST : ''
-    //   if (/\?\w*code=\w/.test(req.url)) {
-    //     currentUrl = encodeURI(HOST + req.originalUrl.split('?')[0])
-    //   } else {
-    //     currentUrl = encodeURI(HOST + req.originalUrl)
-    //   }
-    //   const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
-    //   res.redirect(redirectUrl)
-    // }
-
     const getUserInfo = async () => {
       return new Promise((resolve, reject) => {
         wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, error => {
@@ -130,11 +117,11 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
         try {
           userinfo = await getUserInfo()
         } catch (e) {
-          console.log('查询用户用户错误 :', e, `${req.session.userAccessToken}`)
+          console.log('ERROR>> 查询用户用户错误 :', e, `${JSON.stringify(req.session.userAccessToken)}`)
         }
         
         if (userinfo && userinfo.errcode) {
-          console.error(`查询用户信息失败,${userinfo.errcode},${JSON.stringify(req.session.userAccessToken)}`)
+          console.error(`ERROR>> 查询用户信息失败 : ${userinfo.errcode},${JSON.stringify(req.session.userAccessToken)}`)
           return next()
         }
         if (userinfo) {
@@ -144,7 +131,7 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
               next()
             })
           } else {
-            console.log(`INFO>> 未发现login`)
+            console.log(`INFO>> 未发现req.login`)
             next()
           }
         } else {
