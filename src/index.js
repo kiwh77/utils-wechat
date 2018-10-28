@@ -18,7 +18,7 @@ function WxUtil ({ config }) {
     config
   }
   this.service = require('./service')
-  this.asyncWechatapi = new WechatApi(config.WXAPPID, config.WXAPPSECRET)
+  this.asyncWechatapi = new WechatApi(config.WXAPPID, config.WXAPPSECRET, config.getToken, config.saveToken)
   this.wechatApi = BB.promisifyAll(this.asyncWechatapi)
   /**
    * 加载所需模块
