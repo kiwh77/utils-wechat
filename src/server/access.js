@@ -28,7 +28,7 @@ const incept = ({ wechatapi, cache }) => {
 /**
  * 用户access_token信息
  */
-const authAccess = ({wechatapi, service, cache}) => {
+const authAccess = ({ wechatapi, service, cache }) => {
   const checkUserAccessToken = function (access) {
     const currDate = Date.now()
     return access && access.expires_in > currDate
@@ -89,9 +89,9 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
     const getUserInfo = async () => {
       return new Promise((resolve, reject) => {
         wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, error => {
-          if (error && error.code === 40001 ) {
-            wechatapi.getAccessToken((err, token) => {
-              console.log(err, token)
+          console.log('获取用户微信信息抵账：', error)
+          if (error && error.code === 40001) {
+            wechatapi.getAccessToken((err) => {
               if (err) {
                 return reject(error)
               } else {
@@ -101,25 +101,25 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
           } else {
             reject(error)
           }
-        }) 
+        })
       })
     }
 
     if (req.query.code && req.query.state && req.isUnauthenticated()) {
       // 获取openid
       if (req.session.userAccessToken && req.session.userAccessToken.access_token) {
-        let userinfo 
+        let userinfo
         try {
           userinfo = await getUserInfo()
         } catch (e) {
           console.log('ERROR>> 查询用户用户错误 :', e, `${JSON.stringify(req.session.userAccessToken)}`)
         }
-        
+
         if (userinfo && userinfo.errcode) {
           console.error(`ERROR>> 查询用户信息失败 : ${userinfo.errcode},${JSON.stringify(req.session.userAccessToken)}`)
           return next()
         }
-        if (userinfo) {
+        if (userinfo && userinfo.openid) {
           if (req.login) {
             req.login({ wxinfo: userinfo }, (err) => {
               err ? console.log(`ERROR>> 查询用户信息失败,${err.message}`) : console.log(`INFO>> 查询用户成功,${JSON.stringify(userinfo)}`)
@@ -142,8 +142,8 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
 
 module.exports = ({ wechatapi, service, cache }) => {
   return {
-    incept: incept({wechatapi, cache}),
-    authAccess: authAccess({wechatapi, service, cache}),
-    authWxInfo: authWxInfo({wechatapi, service, cache})
+    incept: incept({ wechatapi, cache }),
+    authAccess: authAccess({ wechatapi, service, cache }),
+    authWxInfo: authWxInfo({ wechatapi, service, cache })
   }
 }
