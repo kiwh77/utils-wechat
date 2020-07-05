@@ -86,10 +86,19 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
   return async (req, res, next) => {
     if (/\w*.js|\w*.css|\w*.html|\w*.png|\w*.jpg|\w*.jpeg/.test(req.url)) return next()
 
+    if (req.isAuthenticated()) return next()
+
+    const redirectFunc = () => {
+      // 拼装重定向
+      const currentUrl = encodeURI(cache.config.HOST + req.originalUrl)
+      const redirectUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${cache.config.WXAPPID}&redirect_uri=${currentUrl}&response_type=code&scope=snsapi_base&state=redirect#wechat_redirect`
+      res.redirect(redirectUrl)
+    }
+
     const getUserInfo = async () => {
       return new Promise((resolve, reject) => {
         wechatapi.getUserAsync(req.session.userAccessToken.openid).then(resolve, error => {
-          console.log('获取用户微信信息抵账：', error)
+          console.log('获取用户微信信息错误：', error)
           if (error && error.code === 40001) {
             wechatapi.getAccessToken((err) => {
               if (err) {
@@ -105,38 +114,40 @@ const authWxInfo = ({ wechatapi, service, cache }) => {
       })
     }
 
-    if (req.query.code && req.query.state && req.isUnauthenticated()) {
-      // 获取openid
-      if (req.session.userAccessToken && req.session.userAccessToken.access_token) {
-        let userinfo
-        try {
-          userinfo = await getUserInfo()
-        } catch (e) {
-          console.log('ERROR>> 查询用户用户错误 :', e, `${JSON.stringify(req.session.userAccessToken)}`)
-        }
 
-        if (userinfo && userinfo.errcode) {
-          console.error(`ERROR>> 查询用户信息失败 : ${userinfo.errcode},${JSON.stringify(req.session.userAccessToken)}`)
-          return next()
-        }
-        if (userinfo && userinfo.openid) {
-          if (req.login) {
-            req.login({ wxinfo: userinfo }, (err) => {
-              err ? console.log(`ERROR>> 查询用户信息失败,${err.message}`) : console.log(`INFO>> 查询用户成功,${JSON.stringify(userinfo)}`)
-              next()
-            })
-          } else {
-            console.log(`INFO>> 未发现req.login`)
-            next()
-          }
-        } else {
-          console.log(`WARNING>> 查询用户信息失败`)
-          next()
-        }
-      }
-    } else {
-      next()
+    if (!req.query.code) {
+      console.log('【INFO】url中没有code，重定向')
+      redirectFunc()
     }
+    // 获取openid
+    if (!req.session.userAccessToken || !req.session.userAccessToken.access_token) {
+      console.error('【ERROR】查询用户信息失败, access_token为空')
+      redirectFunc()
+    }
+    let userinfo
+    try {
+      userinfo = await getUserInfo()
+    } catch (e) {
+      console.error('【ERROR】查询用户信息失败 :', e)
+      redirectFunc()
+    }
+
+    if (userinfo && userinfo.errcode) {
+      console.error(`【ERROR】查询用户信息失败，错误码${userinfo.errcode}`)
+      redirectFunc()
+    }
+    if (!userinfo || !userinfo.openid) {
+      console.error(`【ERROR】查询用户信息失败，没有用户openid`)
+      redirectFunc()
+    }
+    if (!req.login) {
+      console.error(`【ERROR】查询用户信息失败，平台没有req.login`)
+      redirectFunc()
+    }
+    req.login({ wxinfo: userinfo }, (err) => {
+      err ? console.error(`【ERROR】查询用户信息失败,${err.message}`) : console.log(`【INFO】查询用户成功,${JSON.stringify(userinfo)}`)
+      redirectFunc()
+    })
   }
 }
 
