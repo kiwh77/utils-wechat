@@ -1,6 +1,6 @@
 {
   "name": "utils-wechat",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "wechat util for express in node",
   "main": "./src/index.js",
   "scripts": {
@@ -29,6 +29,6 @@
     "passport": "^0.4.0",
     "sha1": "^1.1.1",
     "wechat-api": "^1.35.1",
-    "xml2json": "^0.11.2"
+    "xml2js": "^0.4.23"
   }
 }

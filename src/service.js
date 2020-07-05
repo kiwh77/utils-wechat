@@ -1,7 +1,25 @@
 const axios = require('axios')
 const md5 = require('crypto-js/md5')
 const moment = require('moment')
-const xml2json = require('xml2json')
+const xml2js = require('xml2js')
+
+const xml2json = function (xml) {
+  return new Promise((resolve, reject) => {
+    xml2js.parseString(xml, function (err, result) {
+      if (err) return reject(err)
+      if (typeof result === 'string') {
+        try {
+          const json = JSON.parse(result)
+          resolve(json)
+        } catch (error) {
+          reject(error)
+        }
+      } else {
+        resolve(result)
+      }
+    })
+  })
+}
 
 module.exports.getJsApiTicket = (params) => {
   if (params.accesstoken) {
@@ -117,7 +135,7 @@ module.exports.prepay = async (params) => {
   params.nonce_str = params.nonce_str || `${moment().unix()}`
   params.trade_type = params.trade_type || 'JSAPI'
   const authArgs = ['appid', 'attach', 'body', 'mch_id', 'nonce_str', 'notify_url', 'openid', 'out_trade_no', 'spbill_create_ip', 'total_fee', 'trade_type']
-  for (let i=0;i<authArgs.length;i++) {
+  for (let i = 0; i < authArgs.length; i++) {
     const arg = authArgs[i]
     if (!params[arg]) return Promise.reject(`${arg}不能为空`)
   }
@@ -134,12 +152,12 @@ module.exports.prepay = async (params) => {
   formData += '<spbill_create_ip>' + params.spbill_create_ip + '</spbill_create_ip>'
   formData += '<total_fee>' + params.total_fee + '</total_fee>'
   formData += '<trade_type>' + params.trade_type + '</trade_type>'
-  formData += '<sign>' + getSign({appid: params.appid, attach: params.attach, body: params.body, mch_id: params.mch_id, nonce_str: params.nonce_str, notify_url: params.notify_url, openid: params.openid, out_trade_no: params.out_trade_no, spbill_create_ip: params.spbill_create_ip, total_fee: params.total_fee, trade_type: params.trade_type}, params.key) + '</sign>'
+  formData += '<sign>' + getSign({ appid: params.appid, attach: params.attach, body: params.body, mch_id: params.mch_id, nonce_str: params.nonce_str, notify_url: params.notify_url, openid: params.openid, out_trade_no: params.out_trade_no, spbill_create_ip: params.spbill_create_ip, total_fee: params.total_fee, trade_type: params.trade_type }, params.key) + '</sign>'
   formData += '</xml>'
   const result = await axios.post('https://api.mch.weixin.qq.com/pay/unifiedorder', formData)
 
   if (result && result.status === 200) {
-    const data = JSON.parse(xml2json.toJson(result.data))
+    const data = await xml2json(result.data)
     if (data.xml && data.xml.return_code === 'SUCCESS') {
       const r = {
         appId: params.appid,
