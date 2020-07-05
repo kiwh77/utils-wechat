@@ -5,7 +5,8 @@ const xml2js = require('xml2js')
 
 const xml2json = function (xml) {
   return new Promise((resolve, reject) => {
-    xml2js.parseString(xml, function (err, result) {
+    const xmlParser = new xml2js.Parser({ explicitArray: false, ignoreAttrs: true })
+    xmlParser.parseString(xml, function (err, result) {
       if (err) return reject(err)
       if (typeof result === 'string') {
         try {
